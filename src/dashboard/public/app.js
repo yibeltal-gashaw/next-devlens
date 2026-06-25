@@ -1,3 +1,6 @@
+// ── Constants ─────────────────────────────────────────────────────
+const MAX_LOGS = 2000; // ring-buffer cap — prevents unbounded memory growth
+
 // ── State ──────────────────────────────────────────────────────────
 let allLogs      = [];
 let sourceFilter = 'all';
@@ -28,8 +31,9 @@ stream.onmessage = (e) => {
     allLogs[0]._repeat = (allLogs[0]._repeat || 1) + 1;
     allLogs[0].time = data.time;
   } else {
-    data.id = 'log-' + Math.random().toString(36).substr(2, 9);
+    data.id = 'log-' + (crypto.randomUUID?.() ?? Math.random().toString(36).substr(2, 9));
     allLogs.unshift(data);
+    if (allLogs.length > MAX_LOGS) allLogs.length = MAX_LOGS; // evict oldest entries
   }
   counts.all++;
   counts[data.category] = (counts[data.category] || 0) + 1;

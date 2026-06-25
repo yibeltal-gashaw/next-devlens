@@ -2,7 +2,12 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-function startServer(port = 4321) {
+const MAX_BODY    = 1 * 1024 * 1024; // 1 MB — reject oversized ingest payloads
+const VALID_LEVELS    = new Set(['info', 'warn', 'error']);
+const VALID_SOURCES   = new Set(['server', 'client']);
+const VALID_CATEGORIES = new Set(['network', 'auth', 'compiler', 'system', 'warning']);
+
+function startServer(port = parseInt(process.env.DEVLENS_PORT, 10) || 4321) {
   let activeClients = [];
 
   const server = http.createServer((req, res) => {
@@ -14,14 +19,47 @@ function startServer(port = 4321) {
 
     if (req.url === "/api/ingest" && req.method === "POST") {
       let buf = "";
-      req.on("data", c => (buf += c));
+      let bodySize = 0;
+      req.on("data", chunk => {
+        bodySize += chunk.length;
+        if (bodySize > MAX_BODY) {
+          req.destroy();
+          res.writeHead(413).end("Payload too large");
+          return;
+        }
+        buf += chunk;
+      });
       req.on("end", () => {
-        try {
-          const payload = JSON.parse(buf);
-          activeClients.forEach(c => c.write(`data: ${JSON.stringify(payload)}\n\n`));
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ received: true }));
-        } catch { res.writeHead(400).end(); }
+        let payload;
+        try { payload = JSON.parse(buf); } catch { res.writeHead(400).end("Invalid JSON"); return; }
+
+        // Schema validation — reject malformed or missing required fields
+        if (
+          typeof payload !== 'object' || payload === null ||
+          typeof payload.msg !== 'string' ||
+          !VALID_LEVELS.has(payload.level) ||
+          !VALID_SOURCES.has(payload.source)
+        ) {
+          res.writeHead(422).end("Invalid payload schema");
+          return;
+        }
+
+        // Clamp unknown categories to 'system'
+        if (!VALID_CATEGORIES.has(payload.category)) payload.category = 'system';
+
+        // Broadcast to SSE clients; purge any that have closed since last write
+        const serialised = `data: ${JSON.stringify(payload)}\n\n`;
+        const alive = [];
+        for (const client of activeClients) {
+          try {
+            client.write(serialised);
+            alive.push(client);
+          } catch (_) { /* client gone — drop it */ }
+        }
+        activeClients = alive;
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ received: true }));
       });
       return;
     }
@@ -69,8 +107,17 @@ function startServer(port = 4321) {
     res.writeHead(404).end();
   });
 
+  server.on("error", (err) => {
+    if (err.code === 'EADDRINUSE') {
+      process.stderr.write(`[DevLens] Port ${port} is already in use. Set DEVLENS_PORT to use a different port.\n`);
+      process.exit(1);
+    } else {
+      throw err;
+    }
+  });
+
   server.listen(port, () => {
-    console.log("\x1b[34m%s\x1b[0m", `🔍 [DevLens] Dashboard → http://localhost:${port}`);
+    process.stdout.write(`\x1b[34m🔍 [DevLens] Dashboard → http://localhost:${port}\x1b[0m\n`);
   });
 
   return server;

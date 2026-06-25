@@ -3,12 +3,18 @@ const http = require('http');
 function initDevLens() {
   if (process.env.NODE_ENV === 'production') return;
 
-  const originalLog = console.log;
+  const originalLog  = console.log;
+  const originalWarn = console.warn;
   const originalError = console.error;
 
   console.log = (...args) => {
     processAndTransmit('info', args);
     originalLog(...args);
+  };
+
+  console.warn = (...args) => {
+    processAndTransmit('warn', args);
+    originalWarn(...args);
   };
 
   console.error = (...args) => {
@@ -52,9 +58,10 @@ function processAndTransmit(level, args) {
     time: new Date().toLocaleTimeString('en-US', { hour12: false }) + '.' + String(Date.now() % 1000).padStart(3, '0')
   });
 
+  const DEVLENS_PORT = parseInt(process.env.DEVLENS_PORT, 10) || 4321;
   const req = http.request({
     hostname: 'localhost',
-    port: 4321,
+    port: DEVLENS_PORT,
     path: '/api/ingest',
     method: 'POST',
     headers: {
