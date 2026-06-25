@@ -1,22 +1,34 @@
 import { initDevLensClient as _initDevLensClient } from './client/interceptor.js';
 
 /**
- * initDevLensClient — call once in your Next.js client entry point.
+ * initDevLensClient — call once in your browser entry point.
+ *
+ * Works in any browser-based environment: React, Vite, Next.js, Svelte,
+ * Vue, plain HTML, etc. Does nothing outside a browser window or in production.
  *
  * Options:
  *   relayUrl {string} — where to POST logs.
  *     • Default: 'http://localhost:4321/api/ingest'
- *       Works when the dashboard is on the same machine and the app is HTTP.
- *     • Use '/api/devlens-relay' when your app runs on HTTPS (remote dev
- *       server) to avoid mixed-content blocks. You must also add the relay
- *       API route — see the comment at the bottom of this file.
+ *       Works when your app and the dashboard run on the same machine over HTTP.
+ *     • Use a same-origin path (e.g. '/api/devlens-relay') when your app is
+ *       served over HTTPS to avoid mixed-content blocks. You must add a thin
+ *       server-side proxy route in your own app — see the README for per-framework
+ *       examples (Next.js API routes, Express, Fastify, etc.).
  *
- * Usage in pages/_app.js:
+ * ── Usage examples ────────────────────────────────────────────────────────────
+ *
+ * React / Vite (root component):
  *   import { initDevLensClient } from 'next-devlens/src/client';
- *   initDevLensClient();                                    // HTTP / localhost
- *   initDevLensClient({ relayUrl: '/api/devlens-relay' });  // HTTPS / remote
+ *   initDevLensClient();
  *
- * Usage in app/layout.js (App Router):
+ * React / Vite (with useEffect):
+ *   useEffect(() => initDevLensClient(), []);
+ *
+ * Next.js — Pages Router (pages/_app.js):
+ *   import { initDevLensClient } from 'next-devlens/src/client';
+ *   initDevLensClient();
+ *
+ * Next.js — App Router (app/layout.js):
  *   'use client';
  *   import { useEffect } from 'react';
  *   import { initDevLensClient } from 'next-devlens/src/client';
@@ -24,34 +36,33 @@ import { initDevLensClient as _initDevLensClient } from './client/interceptor.js
  *     useEffect(() => initDevLensClient({ relayUrl: '/api/devlens-relay' }), []);
  *     return <html><body>{children}</body></html>;
  *   }
+ *
+ * Plain HTML:
+ *   <script type="module">
+ *     import { initDevLensClient } from '/node_modules/next-devlens/src/client.js';
+ *     initDevLensClient();
+ *   </script>
  */
 export function initDevLensClient(options) {
   return _initDevLensClient(options);
 }
 
 /*
- * ── Relay API route for HTTPS / remote dev servers ───────────────────────────
+ * ── Relay setup for HTTPS / remote dev servers ───────────────────────────────
  *
- * Your browser can't fetch http://localhost:4321 from an https:// page —
- * the browser blocks it as mixed content. The fix: post to your own Next.js
- * API route instead, which proxies the log server-side.
+ * Browsers block fetch() from an https:// page to an http:// endpoint.
+ * The fix is a thin server-side proxy in your own app. Per-framework examples
+ * (Next.js Pages Router, Next.js App Router, Express, Fastify) are in the README.
  *
- * Create this file in your Next.js app:
+ * Short version — create a POST endpoint in your app that does:
  *
- *   pages/api/devlens-relay.js
- *   ─────────────────────────
- *   export default async function handler(req, res) {
- *     if (req.method !== 'POST') return res.status(405).end();
- *     try {
- *       await fetch('http://localhost:4321/api/ingest', {
- *         method: 'POST',
- *         headers: { 'Content-Type': 'application/json' },
- *         body: JSON.stringify(req.body),
- *       });
- *     } catch (_) {}
- *     res.status(200).json({ ok: true });
- *   }
+ *   await fetch('http://localhost:4321/api/ingest', {
+ *     method: 'POST',
+ *     headers: { 'Content-Type': 'application/json' },
+ *     body: JSON.stringify(<forwarded-body>),
+ *   });
  *
  * Then initialise with:
  *   initDevLensClient({ relayUrl: '/api/devlens-relay' });
  */
+
