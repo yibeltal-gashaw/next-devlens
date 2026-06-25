@@ -1,0 +1,8 @@
+{
+  "name": "next-devlens",
+  "version": "1.0.0",
+  "main": "./src/index.js",
+  "bin": {
+    "devlens-dashboard": "./bin/dashboard.js"
+  }
+}
