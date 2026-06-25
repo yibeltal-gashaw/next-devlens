@@ -1,13 +1,20 @@
 const http = require("http");
-const fs = require("fs");
+const fs   = require("fs");
 const path = require("path");
+const { execFile } = require("child_process");
 
-const MAX_BODY    = 1 * 1024 * 1024; // 1 MB — reject oversized ingest payloads
-const VALID_LEVELS    = new Set(['info', 'warn', 'error']);
-const VALID_SOURCES   = new Set(['server', 'client']);
-const VALID_CATEGORIES = new Set(['network', 'auth', 'compiler', 'system', 'warning']);
+const MAX_BODY         = 1 * 1024 * 1024; // 1 MB — reject oversized ingest payloads
+const VALID_LEVELS     = new Set(['info', 'warn', 'error']);
+const VALID_SOURCES    = new Set(['server', 'client']);
+const VALID_CATEGORIES = new Set([
+  'network', 'auth', 'compiler', 'system', 'warning',
+  'lint', 'types', 'tests', 'database', 'performance', 'accessibility'
+]);
 
-function startServer(port = parseInt(process.env.DEVLENS_PORT, 10) || 4321) {
+const CACHE_TTL = 30_000; // 30 seconds
+const cache = { meta: null, git: null, audit: null };
+
+function startServer(port = parseInt(process.env.DEVLENS_PORT, 10) || 4321, projectDir = process.cwd()) {
   let activeClients = [];
 
   const server = http.createServer((req, res) => {
@@ -101,6 +108,117 @@ function startServer(port = parseInt(process.env.DEVLENS_PORT, 10) || 4321) {
       } catch (err) {
         res.writeHead(500).end("Error loading dashboard JS");
       }
+      return;
+    }
+
+    // ── /api/meta — package.json info ──────────────────────────────
+    if (req.url === "/api/meta" && req.method === "GET") {
+      if (cache.meta && Date.now() - cache.meta.ts < CACHE_TTL) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(cache.meta.data));
+      }
+      try {
+        const raw = fs.readFileSync(path.join(projectDir, "package.json"), "utf8");
+        const pkg = JSON.parse(raw);
+        const hasReadme = fs.existsSync(path.join(projectDir, "README.md"));
+        const hasTsConfig = fs.existsSync(path.join(projectDir, "tsconfig.json"));
+        const hasEslint = fs.existsSync(path.join(projectDir, ".eslintrc")) ||
+                          fs.existsSync(path.join(projectDir, ".eslintrc.json")) ||
+                          fs.existsSync(path.join(projectDir, ".eslintrc.js")) ||
+                          fs.existsSync(path.join(projectDir, "eslint.config.js")) ||
+                          fs.existsSync(path.join(projectDir, "eslint.config.mjs"));
+        const hasEnv = fs.existsSync(path.join(projectDir, ".env"));
+        let isEnvIgnored = false;
+        if (hasEnv) {
+          try {
+            const gitignore = fs.readFileSync(path.join(projectDir, ".gitignore"), "utf8");
+            isEnvIgnored = gitignore.split("\n").some(line => {
+              const trimmed = line.trim();
+              return trimmed === ".env" || trimmed === "**/.env" || trimmed === ".env*";
+            });
+          } catch (_) {}
+        }
+        
+        let pkgManager = "npm";
+        if (fs.existsSync(path.join(projectDir, "yarn.lock"))) {
+          pkgManager = "yarn";
+        } else if (fs.existsSync(path.join(projectDir, "pnpm-lock.yaml"))) {
+          pkgManager = "pnpm";
+        } else if (fs.existsSync(path.join(projectDir, "bun.lockb"))) {
+          pkgManager = "bun";
+        }
+
+        const data = {
+          name:        pkg.name        || null,
+          version:     pkg.version     || null,
+          description: pkg.description || null,
+          scripts:     pkg.scripts     || {},
+          deps:        Object.keys(pkg.dependencies    || {}).length,
+          devDeps:     Object.keys(pkg.devDependencies || {}).length,
+          dependencies: Object.keys(pkg.dependencies    || {}),
+          devDependencies: Object.keys(pkg.devDependencies || {}),
+          hasReadme,
+          hasTsConfig,
+          hasEslint,
+          hasEnv,
+          isEnvIgnored,
+          pkgManager
+        };
+        cache.meta = { data, ts: Date.now() };
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(data));
+      } catch (e) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+      return;
+    }
+
+    // ── /api/git — git log + status ──────────────────────────────────
+    if (req.url === "/api/git" && req.method === "GET") {
+      if (cache.git && Date.now() - cache.git.ts < CACHE_TTL) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(cache.git.data));
+      }
+      const done = (data) => {
+        cache.git = { data, ts: Date.now() };
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(data));
+      };
+      execFile("git", ["-C", projectDir, "log", "--oneline", "-15"], { timeout: 5000 }, (e1, logOut) => {
+        execFile("git", ["-C", projectDir, "status", "--short"],            { timeout: 5000 }, (e2, statusOut) => {
+          if (e1 && e2) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "git not available in this directory" }));
+          }
+          done({
+            log:    (logOut    || "").trim().split("\n").filter(Boolean),
+            status: (statusOut || "").trim().split("\n").filter(Boolean),
+          });
+        });
+      });
+      return;
+    }
+
+    // ── /api/npm-audit — vulnerability scan ──────────────────────────
+    if (req.url === "/api/npm-audit" && req.method === "GET") {
+      if (cache.audit && Date.now() - cache.audit.ts < CACHE_TTL) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify(cache.audit.data));
+      }
+      const auditStart = Date.now();
+      execFile("npm", ["audit", "--json", "--prefix", projectDir], { timeout: 30000 }, (_err, stdout) => {
+        try {
+          const data = JSON.parse(stdout || "{}");
+          data.scanDurationMs = Date.now() - auditStart;
+          cache.audit = { data, ts: Date.now() };
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify(data));
+        } catch(e) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "npm audit failed: " + e.message }));
+        }
+      });
       return;
     }
 

@@ -3,27 +3,26 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>DevLens</title>
+<title>DevLens — Dev Intelligence Dashboard</title>
+<meta name="description" content="Real-time developer intelligence dashboard for Node.js, React, Next.js and more"/>
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+
 <header>
-  <button id="sidebarToggle" class="btn" style="padding: 0.3rem 0.5rem; margin-right: -0.25rem;" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+  <button id="sidebarToggle" class="btn icon-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-      <line x1="9" y1="3" x2="9" y2="21"></line>
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/>
     </svg>
   </button>
-  <a class="logo" href="#">
+  <a class="logo" href="#" onclick="navigateTo('overview'); return false;">
     <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8">
       <circle cx="9" cy="9" r="7"/><circle cx="9" cy="9" r="3"/>
       <line x1="9" y1="2" x2="9" y2="0.5"/><line x1="9" y1="16" x2="9" y2="17.5"/>
     </svg>
     DevLens
   </a>
-  <div class="header-path">
-    <span>Next.js</span> · <span id="hPath">dev</span>
-  </div>
+  <div class="header-path"><span id="hProjectName">dev</span></div>
   <div class="header-spacer"></div>
   <div class="status-chip">
     <span id="status-dot" title="Disconnected"></span>
@@ -37,143 +36,295 @@
 </header>
 
 <div class="shell">
-  <!-- Sidebar -->
-  <aside class="sidebar" role="navigation" aria-label="Filters">
-    <div class="sidebar-section">Source</div>
-    <button class="nav-item active" onclick="filterSource('all',this)">
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="sidebar" role="navigation" aria-label="Navigation">
+
+    <button class="nav-item active" data-view="overview" onclick="navigateTo('overview')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
-        <span class="nav-text">All Sources</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span class="nav-text">Overview</span>
       </span>
-      <span class="nav-count" id="bs-all">0</span>
     </button>
-    <button class="nav-item src-server" onclick="filterSource('server',this)">
+    <button class="nav-item" data-view="trends" onclick="navigateTo('trends')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-        <span class="nav-text">Server</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span class="nav-text">Trends</span>
       </span>
-      <span class="nav-count" id="bs-server">0</span>
     </button>
-    <button class="nav-item src-client" onclick="filterSource('client',this)">
+    <button class="nav-item" data-view="logs" data-src="server" onclick="navigateTo('logs','all','server')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-        <span class="nav-text">Client</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+        <span class="nav-text">Server Logs</span>
       </span>
-      <span class="nav-count" id="bs-client">0</span>
+      <span class="nav-count" id="nc-server"></span>
+    </button>
+    <button class="nav-item" data-view="logs" data-src="client" onclick="navigateTo('logs','all','client')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span class="nav-text">Client Logs</span>
+      </span>
+      <span class="nav-count" id="nc-client"></span>
     </button>
 
     <div class="sidebar-divider"></div>
-    <div class="sidebar-section">Category</div>
+    <div class="sidebar-section">Code Quality</div>
 
-    <button class="nav-item cat-tab active" onclick="filterCat('all',this)">
+    <button class="nav-item" data-view="logs" data-cat="lint" onclick="navigateTo('logs','lint')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-        <span class="nav-text">All Logs</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-text">Lint</span>
       </span>
-      <span class="nav-count" id="b-all">0</span>
+      <span class="nav-count" id="nc-lint"></span>
     </button>
-    <button class="nav-item cat-tab" onclick="filterCat('network',this)">
+    <button class="nav-item" data-view="logs" data-cat="types" onclick="navigateTo('logs','types')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><circle cx="12" cy="20" r="1"></circle></svg>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        <span class="nav-text">Types</span>
+      </span>
+      <span class="nav-count" id="nc-types"></span>
+    </button>
+    <button class="nav-item" data-view="logs" data-cat="tests" onclick="navigateTo('logs','tests')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11m0 0a2 2 0 0 0 4 0m-4 0H5m8 0h4"/></svg>
+        <span class="nav-text">Tests</span>
+      </span>
+      <span class="nav-count" id="nc-tests"></span>
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">Security</div>
+
+    <button class="nav-item" data-view="environment" onclick="navigateTo('environment')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        <span class="nav-text">Environment</span>
+      </span>
+      <span class="nav-count" id="nc-env"></span>
+    </button>
+    <button class="nav-item" data-view="dependencies" onclick="navigateTo('dependencies')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span class="nav-text">Dependencies</span>
+      </span>
+      <span class="nav-count" id="nc-deps"></span>
+    </button>
+    <button class="nav-item" data-view="logs" data-cat="network" onclick="navigateTo('logs','network')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
         <span class="nav-text">Network</span>
       </span>
-      <span class="nav-count" id="b-network">0</span>
+      <span class="nav-count" id="nc-network"></span>
     </button>
-    <button class="nav-item cat-tab" onclick="filterCat('auth',this)">
+    <button class="nav-item" data-view="api-surface" onclick="navigateTo('api-surface')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="nav-text">API Surface</span>
+      </span>
+      <span class="nav-count" id="nc-api"></span>
+    </button>
+    <button class="nav-item" data-view="logs" data-cat="auth" onclick="navigateTo('logs','auth')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span class="nav-text">Auth</span>
       </span>
-      <span class="nav-count" id="b-auth">0</span>
+      <span class="nav-count" id="nc-auth"></span>
     </button>
-    <button class="nav-item cat-tab" onclick="filterCat('compiler',this)">
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">Experience</div>
+
+    <button class="nav-item" data-view="logs" data-cat="performance" onclick="navigateTo('logs','performance')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-        <span class="nav-text">Compiler</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nav-text">Performance</span>
       </span>
-      <span class="nav-count" id="b-compiler">0</span>
+      <span class="nav-count" id="nc-performance"></span>
     </button>
-    <button class="nav-item cat-tab" onclick="filterCat('system',this)">
+    <button class="nav-item" data-view="logs" data-cat="accessibility" onclick="navigateTo('logs','accessibility')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        <span class="nav-text">System</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="m19 7-7 3-7-3"/><path d="m5 22 2-8"/><path d="m19 22-2-8"/><path d="m9 14 3 8 3-8"/></svg>
+        <span class="nav-text">Accessibility</span>
       </span>
-      <span class="nav-count" id="b-system">0</span>
+      <span class="nav-count" id="nc-accessibility"></span>
     </button>
-    <button class="nav-item cat-tab" onclick="filterCat('warning',this)">
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">Project</div>
+
+    <button class="nav-item" data-view="setup" onclick="navigateTo('setup')">
       <span class="nav-label">
-        <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        <span class="nav-text">Warnings</span>
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <span class="nav-text">Setup</span>
       </span>
-      <span class="nav-count" id="b-warning">0</span>
+    </button>
+    <button class="nav-item" data-view="logs" data-cat="database" onclick="navigateTo('logs','database')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <span class="nav-text">Database</span>
+      </span>
+      <span class="nav-count" id="nc-database"></span>
+    </button>
+    <button class="nav-item" data-view="git" onclick="navigateTo('git')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+        <span class="nav-text">Git &amp; CI/CD</span>
+      </span>
+    </button>
+    <button class="nav-item" data-view="docs" onclick="navigateTo('docs')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="nav-text">Docs</span>
+      </span>
+    </button>
+
+    <div class="sidebar-divider sidebar-grow"></div>
+
+    <button class="nav-item" data-view="ai-chat" onclick="navigateTo('ai-chat')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-text">AI Chat</span>
+      </span>
+    </button>
+    <button class="nav-item" data-view="settings" onclick="navigateTo('settings')">
+      <span class="nav-label">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-text">Settings</span>
+      </span>
     </button>
   </aside>
 
-  <!-- Main log area -->
+  <!-- ── Main content ───────────────────────────────────────────── -->
   <main class="main">
     <div id="pause-banner" role="status" onclick="resumeScroll()">
       ⏸ Live updates paused — click to resume
     </div>
-    <div class="content">
-      <div class="log-area" id="logArea">
-        <!-- header row -->
-        <div class="list-header">
-          <div class="list-header-cell">Time</div>
-          <div class="list-header-cell">Source</div>
-          <div class="list-header-cell">Category</div>
-          <div class="list-header-cell" style="padding-left:0.25rem">Message</div>
-        </div>
-        <div id="logList"></div>
-        <div id="emptyState" class="empty-state">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-          </svg>
-          <p>No logs yet — waiting for your Next.js app…</p>
-        </div>
-      </div>
 
-      <!-- Right breakdown panel -->
-      <div class="right-panel">
-        <div class="panel-section">
-          <div class="panel-title">Total logs</div>
-          <div class="big-stat" id="pTotal">0</div>
-          <div class="big-stat-label">across all sources</div>
+    <!-- Overview -->
+    <section class="view active" data-view="overview">
+      <div class="view-inner scroll-area" id="overviewContent"></div>
+    </section>
+
+    <!-- Trends -->
+    <section class="view" data-view="trends">
+      <div class="view-inner scroll-area" id="trendsContent"></div>
+    </section>
+
+    <!-- Logs (reused for all category-filtered views) -->
+    <section class="view" data-view="logs">
+      <div class="logs-layout">
+        <div class="log-view-bar">
+          <span id="logViewHeader" class="log-view-title">All Logs</span>
+          <div class="src-filters">
+            <button class="src-filter-btn active" data-src="all"    onclick="filterSource('all')">All</button>
+            <button class="src-filter-btn"        data-src="server" onclick="filterSource('server')">Server</button>
+            <button class="src-filter-btn"        data-src="client" onclick="filterSource('client')">Client</button>
+          </div>
         </div>
-        <div class="panel-section">
-          <div class="panel-title">Breakdown</div>
-          <div class="stat-row"><span class="stat-label">Server</span><span class="stat-val" id="pServer">0</span></div>
-          <div class="stat-bar-wrap"><div class="stat-bar blue" id="barServer" style="width:0%"></div></div>
-          <div class="stat-row"><span class="stat-label">Client</span><span class="stat-val" id="pClient">0</span></div>
-          <div class="stat-bar-wrap"><div class="stat-bar purple" id="barClient" style="width:0%"></div></div>
-        </div>
-        <div class="panel-section">
-          <div class="panel-title">By category</div>
-          <div class="stat-row"><span class="stat-label">Network</span><span class="stat-val" id="pNetwork">0</span></div>
-          <div class="stat-row"><span class="stat-label">Auth</span><span class="stat-val" id="pAuth">0</span></div>
-          <div class="stat-row"><span class="stat-label">Compiler</span><span class="stat-val" id="pCompiler">0</span></div>
-          <div class="stat-row"><span class="stat-label">System</span><span class="stat-val" id="pSystem">0</span></div>
-          <div class="stat-row"><span class="stat-label">Warnings</span><span class="stat-val" id="pWarning" style="color:#ea580c">0</span></div>
-        </div>
-        <div class="panel-section">
-          <div class="panel-title">By level</div>
-          <div class="stat-row"><span class="stat-label">Info</span><span class="stat-val" id="pInfo">0</span></div>
-          <div class="stat-row"><span class="stat-label" style="color:#92400e">Warn</span><span class="stat-val" id="pWarn" style="color:#92400e">0</span></div>
-          <div class="stat-row"><span class="stat-label" style="color:#b91c1c">Error</span><span class="stat-val" id="pError" style="color:#b91c1c">0</span></div>
+        <div class="content">
+          <div class="log-area" id="logArea">
+            <div class="list-header">
+              <div class="list-header-cell">Time</div>
+              <div class="list-header-cell">Source</div>
+              <div class="list-header-cell">Category</div>
+              <div class="list-header-cell" style="padding-left:0.25rem">Message</div>
+            </div>
+            <div id="logList"></div>
+            <div id="emptyState" class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <p>No logs yet — waiting for your app…</p>
+            </div>
+          </div>
+          <!-- Right stats panel -->
+          <div class="right-panel">
+            <div class="panel-section">
+              <div class="panel-title">Total logs</div>
+              <div class="big-stat" id="pTotal">0</div>
+              <div class="big-stat-label">across all sources</div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-title">By source</div>
+              <div class="stat-row"><span class="stat-label">Server</span><span class="stat-val" id="pServer">0</span></div>
+              <div class="stat-bar-wrap"><div class="stat-bar blue" id="barServer" style="width:0%"></div></div>
+              <div class="stat-row"><span class="stat-label">Client</span><span class="stat-val" id="pClient">0</span></div>
+              <div class="stat-bar-wrap"><div class="stat-bar purple" id="barClient" style="width:0%"></div></div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-title">By category</div>
+              <div class="stat-row"><span class="stat-label">Network</span><span class="stat-val" id="pNetwork">0</span></div>
+              <div class="stat-row"><span class="stat-label">Auth</span><span class="stat-val" id="pAuth">0</span></div>
+              <div class="stat-row"><span class="stat-label">Compiler</span><span class="stat-val" id="pCompiler">0</span></div>
+              <div class="stat-row"><span class="stat-label">Lint</span><span class="stat-val" id="pLint">0</span></div>
+              <div class="stat-row"><span class="stat-label">Types</span><span class="stat-val" id="pTypes">0</span></div>
+              <div class="stat-row"><span class="stat-label">Tests</span><span class="stat-val" id="pTests">0</span></div>
+              <div class="stat-row"><span class="stat-label">Database</span><span class="stat-val" id="pDatabase">0</span></div>
+              <div class="stat-row"><span class="stat-label">Performance</span><span class="stat-val" id="pPerformance">0</span></div>
+              <div class="stat-row"><span class="stat-label">A11y</span><span class="stat-val" id="pAccessibility">0</span></div>
+              <div class="stat-row"><span class="stat-label">System</span><span class="stat-val" id="pSystem">0</span></div>
+              <div class="stat-row"><span class="stat-label">Warnings</span><span class="stat-val" id="pWarning" style="color:#ea580c">0</span></div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-title">By level</div>
+              <div class="stat-row"><span class="stat-label">Info</span><span class="stat-val" id="pInfo">0</span></div>
+              <div class="stat-row"><span class="stat-label" style="color:#92400e">Warn</span><span class="stat-val" id="pWarn" style="color:#92400e">0</span></div>
+              <div class="stat-row"><span class="stat-label" style="color:#b91c1c">Error</span><span class="stat-val" id="pError" style="color:#b91c1c">0</span></div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- API Surface -->
+    <section class="view" data-view="api-surface">
+      <div class="view-inner scroll-area" id="apiSurfaceContent"></div>
+    </section>
+
+    <!-- Environment Security -->
+    <section class="view" data-view="environment">
+      <div class="view-inner scroll-area" id="environmentContent"></div>
+    </section>
+
+    <!-- Dependencies -->
+    <section class="view" data-view="dependencies">
+      <div class="view-inner scroll-area" id="dependenciesContent"></div>
+    </section>
+
+    <!-- Setup -->
+    <section class="view" data-view="setup">
+      <div class="view-inner scroll-area" id="setupContent"></div>
+    </section>
+
+    <!-- Git -->
+    <section class="view" data-view="git">
+      <div class="view-inner scroll-area" id="gitContent"></div>
+    </section>
+
+    <!-- Docs -->
+    <section class="view" data-view="docs">
+      <div class="view-inner scroll-area" id="docsContent"></div>
+    </section>
+
+    <!-- AI Chat -->
+    <section class="view" data-view="ai-chat">
+      <div class="view-inner scroll-area" id="aiChatContent"></div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view" data-view="settings">
+      <div class="view-inner scroll-area" id="settingsContent"></div>
+    </section>
   </main>
 </div>
 
-<!-- Search Modal Popup -->
-<div id="searchModal" class="modal-backdrop" style="display: none;" onclick="closeSearchModal()">
+<!-- ── Command-palette search modal ──────────────────────────────── -->
+<div id="searchModal" class="modal-backdrop" style="display:none;" onclick="closeSearchModal()">
   <div class="modal-content" onclick="event.stopPropagation()">
     <div class="modal-header">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>
-      <input id="modalSearchInput" type="text" placeholder="Search logs (e.g. level:error compiler)..." oninput="onModalSearch()"/>
+      <input id="modalSearchInput" type="text" placeholder="Search logs (level:error cat:network timeout)…" oninput="onModalSearch()"/>
       <kbd class="modal-esc-hint">ESC</kbd>
     </div>
     <div id="modalSearchResults" class="modal-results"></div>
