@@ -28,6 +28,7 @@ stream.onmessage = (e) => {
     allLogs[0]._repeat = (allLogs[0]._repeat || 1) + 1;
     allLogs[0].time = data.time;
   } else {
+    data.id = 'log-' + Math.random().toString(36).substr(2, 9);
     allLogs.unshift(data);
   }
   counts.all++;
@@ -57,11 +58,57 @@ function scheduleRender() {
   requestAnimationFrame(() => { renderLogs(); pendingRender = false; });
 }
 
+// ── Advanced Search Helper ─────────────────────────────────────────
+function parseSearchQuery(queryStr) {
+  const tokens = queryStr.split(/\s+/).filter(Boolean);
+  const textTokens = [];
+  const filters = {
+    level: null,
+    source: null,
+    category: null
+  };
+  
+  tokens.forEach(token => {
+    if (token.startsWith('level:')) {
+      filters.level = token.substring(6).toLowerCase();
+    } else if (token.startsWith('src:')) {
+      filters.source = token.substring(4).toLowerCase();
+    } else if (token.startsWith('source:')) {
+      filters.source = token.substring(7).toLowerCase();
+    } else if (token.startsWith('cat:')) {
+      filters.category = token.substring(4).toLowerCase();
+    } else if (token.startsWith('category:')) {
+      filters.category = token.substring(9).toLowerCase();
+    } else {
+      textTokens.push(token.toLowerCase());
+    }
+  });
+  
+  return { textTokens, filters };
+}
+
 function renderLogs() {
-  const filtered = allLogs
-    .filter(l => sourceFilter === 'all' || l.source   === sourceFilter)
-    .filter(l => catFilter    === 'all' || l.category === catFilter)
-    .filter(l => !searchQuery || l.msg?.toLowerCase().includes(searchQuery));
+  const queryInfo = searchQuery ? parseSearchQuery(searchQuery) : { textTokens: [], filters: {} };
+
+  const filtered = allLogs.filter(l => {
+    if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
+    if (queryInfo.filters.source && l.source !== queryInfo.filters.source) return false;
+
+    if (catFilter !== 'all' && l.category !== catFilter) return false;
+    if (queryInfo.filters.category && l.category !== queryInfo.filters.category) return false;
+
+    if (queryInfo.filters.level && l.level !== queryInfo.filters.level) return false;
+
+    if (queryInfo.textTokens.length > 0) {
+      const msgLower = (l.msg || '').toLowerCase();
+      const metaStr = l.meta ? JSON.stringify(l.meta).toLowerCase() : '';
+      const allMatched = queryInfo.textTokens.every(token => 
+        msgLower.includes(token) || metaStr.includes(token)
+      );
+      if (!allMatched) return false;
+    }
+    return true;
+  });
 
   emptyState.style.display = filtered.length === 0 ? 'flex' : 'none';
 
@@ -69,6 +116,7 @@ function renderLogs() {
   filtered.forEach(log => {
     const row = document.createElement('div');
     row.className = 'log-row level-' + (log.level || 'info');
+    if (log.id) row.id = log.id;
 
     // time
     const colTime = document.createElement('div');
@@ -228,4 +276,124 @@ function toggleSidebar() {
 // Initialize sidebar state on page load
 if (localStorage.getItem('sidebar-collapsed') === 'true') {
   document.querySelector('.sidebar').classList.add('collapsed');
+}
+
+// ── Keyboard Shortcuts ──────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    openSearchModal();
+  } else if (e.key === 'Escape') {
+    closeSearchModal();
+  }
+});
+
+// ── Modal Search & Control ──────────────────────────────────────────
+function openSearchModal() {
+  const modal = document.getElementById('searchModal');
+  const input = document.getElementById('modalSearchInput');
+  modal.style.display = 'flex';
+  input.value = '';
+  document.getElementById('modalSearchResults').innerHTML = '';
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeSearchModal() {
+  const modal = document.getElementById('searchModal');
+  modal.style.display = 'none';
+}
+
+function onModalSearch() {
+  const queryStr = document.getElementById('modalSearchInput').value.trim().toLowerCase();
+  const resultsContainer = document.getElementById('modalSearchResults');
+  
+  if (!queryStr) {
+    resultsContainer.innerHTML = '';
+    return;
+  }
+  
+  const queryInfo = parseSearchQuery(queryStr);
+  const matched = allLogs.filter(l => {
+    if (queryInfo.filters.source && l.source !== queryInfo.filters.source) return false;
+    if (queryInfo.filters.category && l.category !== queryInfo.filters.category) return false;
+    if (queryInfo.filters.level && l.level !== queryInfo.filters.level) return false;
+
+    if (queryInfo.textTokens.length > 0) {
+      const msgLower = (l.msg || '').toLowerCase();
+      const metaStr = l.meta ? JSON.stringify(l.meta).toLowerCase() : '';
+      return queryInfo.textTokens.every(token => 
+        msgLower.includes(token) || metaStr.includes(token)
+      );
+    }
+    return true;
+  });
+
+  const frag = document.createDocumentFragment();
+  matched.slice(0, 50).forEach(log => {
+    const row = document.createElement('div');
+    row.className = 'modal-row';
+    row.addEventListener('click', () => {
+      closeSearchModal();
+      
+      // Ensure sidebar/header filters don't hide the clicked log
+      if (sourceFilter !== 'all' && log.source !== sourceFilter) {
+        filterSource('all', document.querySelector('.nav-item'));
+      }
+      if (catFilter !== 'all' && log.category !== catFilter) {
+        filterCat('all', document.querySelector('.cat-tab'));
+      }
+      
+      // Wait for filters rendering, then scroll and flash
+      setTimeout(() => {
+        const el = document.getElementById(log.id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('highlight-flash');
+          setTimeout(() => el.classList.remove('highlight-flash'), 2000);
+        }
+      }, 100);
+    });
+
+    const timeCol = document.createElement('div');
+    timeCol.className = 'log-col-time';
+    timeCol.textContent = log.time;
+
+    const srcCol = document.createElement('div');
+    srcCol.className = 'log-col-source';
+    const srcPill = document.createElement('span');
+    srcPill.className = 'pill ' + (log.source || 'server');
+    srcPill.textContent = log.source || 'server';
+    srcCol.appendChild(srcPill);
+
+    const catCol = document.createElement('div');
+    catCol.className = 'log-col-cat';
+    const catPill = document.createElement('span');
+    catPill.className = 'pill ' + (log.category || 'system');
+    catPill.textContent = log.category || 'system';
+    catCol.appendChild(catPill);
+
+    const msgCol = document.createElement('div');
+    msgCol.className = 'log-col-msg';
+    const msgText = document.createElement('div');
+    msgText.className = 'msg-text';
+    msgText.textContent = log.msg || '(object)';
+    msgCol.appendChild(msgText);
+
+    row.appendChild(timeCol);
+    row.appendChild(srcCol);
+    row.appendChild(catCol);
+    row.appendChild(msgCol);
+    frag.appendChild(row);
+  });
+  
+  resultsContainer.innerHTML = '';
+  if (matched.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.style.padding = '1.25rem';
+    noResults.style.color = 'var(--muted)';
+    noResults.textContent = 'No matching logs found.';
+    resultsContainer.appendChild(noResults);
+  } else {
+    resultsContainer.appendChild(frag);
+  }
 }

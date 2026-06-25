@@ -29,7 +29,10 @@
     <span id="status-dot" title="Disconnected"></span>
     <span id="status-label">connecting…</span>
   </div>
-  <input id="searchInput" type="search" placeholder="Search logs…" aria-label="Search" oninput="onSearch()"/>
+  <div class="search-container">
+    <input id="searchInput" type="search" placeholder="Search logs…" aria-label="Search" onclick="openSearchModal()" readonly/>
+    <kbd class="search-kbd">Ctrl+K</kbd>
+  </div>
   <button class="btn btn-danger" onclick="clearLogs()">Clear</button>
 </header>
 
@@ -161,6 +164,22 @@
     </div>
   </main>
 </div>
+
+<!-- Search Modal Popup -->
+<div id="searchModal" class="modal-backdrop" style="display: none;" onclick="closeSearchModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="modalSearchInput" type="text" placeholder="Search logs (e.g. level:error compiler)..." oninput="onModalSearch()"/>
+      <kbd class="modal-esc-hint">ESC</kbd>
+    </div>
+    <div id="modalSearchResults" class="modal-results"></div>
+  </div>
+</div>
+
 <script src="/app.js"></script>
 </body>
 </html>
