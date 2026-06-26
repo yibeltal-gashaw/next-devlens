@@ -1,8 +1,48 @@
 {
   "name": "next-devlens",
   "version": "1.0.0",
+  "description": "Real-time structured log dashboard for Node.js — streams console output to a local UI with filtering, search, and source tagging.",
+  "keywords": [
+    "logging",
+    "dashboard",
+    "devtools",
+    "console",
+    "debug",
+    "next.js",
+    "express",
+    "sse",
+    "realtime",
+    "log-viewer",
+    "developer-tools"
+  ],
+  "author": "Yibeltal Gashaw",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yibeltal-gashaw/next-devlens.git"
+  },
+  "homepage": "https://github.com/yibeltal-gashaw/next-devlens#readme",
+  "bugs": {
+    "url": "https://github.com/yibeltal-gashaw/next-devlens/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./src/client.js": "./src/client.js"
+  },
   "bin": {
     "devlens-dashboard": "./bin/dashboard.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prepublishOnly": "node -e \"require('./src/index.js')\" && echo 'Smoke test passed'"
   }
 }

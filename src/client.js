@@ -1,4 +1,4 @@
-import { initDevLensClient as _initDevLensClient } from './client/interceptor.js';
+const { initDevLensClient } = require('./client/interceptor.js');
 
 /**
  * initDevLensClient — call once in your browser entry point.
@@ -18,20 +18,20 @@ import { initDevLensClient as _initDevLensClient } from './client/interceptor.js
  * ── Usage examples ────────────────────────────────────────────────────────────
  *
  * React / Vite (root component):
- *   import { initDevLensClient } from 'next-devlens/src/client';
+ *   const { initDevLensClient } = require('next-devlens/src/client.js');
  *   initDevLensClient();
  *
  * React / Vite (with useEffect):
  *   useEffect(() => initDevLensClient(), []);
  *
  * Next.js — Pages Router (pages/_app.js):
- *   import { initDevLensClient } from 'next-devlens/src/client';
+ *   const { initDevLensClient } = require('next-devlens/src/client.js');
  *   initDevLensClient();
  *
  * Next.js — App Router (app/layout.js):
  *   'use client';
  *   import { useEffect } from 'react';
- *   import { initDevLensClient } from 'next-devlens/src/client';
+ *   import { initDevLensClient } from 'next-devlens/src/client.js';
  *   export default function RootLayout({ children }) {
  *     useEffect(() => initDevLensClient({ relayUrl: '/api/devlens-relay' }), []);
  *     return <html><body>{children}</body></html>;
@@ -43,9 +43,7 @@ import { initDevLensClient as _initDevLensClient } from './client/interceptor.js
  *     initDevLensClient();
  *   </script>
  */
-export function initDevLensClient(options) {
-  return _initDevLensClient(options);
-}
+module.exports = { initDevLensClient };
 
 /*
  * ── Relay setup for HTTPS / remote dev servers ───────────────────────────────
@@ -65,4 +63,3 @@ export function initDevLensClient(options) {
  * Then initialise with:
  *   initDevLensClient({ relayUrl: '/api/devlens-relay' });
  */
-
