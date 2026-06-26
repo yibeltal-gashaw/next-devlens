@@ -1,6 +1,6 @@
 {
   "name": "next-devlens",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Real-time structured log dashboard for Node.js — streams console output to a local UI with filtering, search, and source tagging.",
   "keywords": [
     "logging",
