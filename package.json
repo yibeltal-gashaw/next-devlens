@@ -19,7 +19,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yibeltal-gashaw/next-devlens.git"
+    "url": "git+https://github.com/yibeltal-gashaw/next-devlens.git"
   },
   "homepage": "https://github.com/yibeltal-gashaw/next-devlens#readme",
   "bugs": {
@@ -34,7 +34,7 @@
     "./src/client.js": "./src/client.js"
   },
   "bin": {
-    "devlens-dashboard": "./bin/dashboard.js"
+    "devlens-dashboard": "bin/dashboard.js"
   },
   "files": [
     "bin/",
