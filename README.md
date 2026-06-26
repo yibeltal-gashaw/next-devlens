@@ -1,4 +1,8 @@
-﻿# next-devlens
+﻿<p align="center">
+  <img src="./public/images/logo.png" width="120" alt="next-devlens logo" />
+</p>
+
+# next-devlens
 
 A real-time structured log dashboard for Node.js development. Intercepts `console.log`, `console.warn`, and `console.error` on both the server and browser, streams them to a local dashboard, and displays them with filtering, search, and source tagging.
 
