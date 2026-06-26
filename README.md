@@ -1,5 +1,5 @@
-﻿<p align="center">
-  <img src="./public/images/logo.png" width="120" alt="next-devlens logo" />
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yibeltal-gashaw/next-devlens/main/public/images/logo.png" width="120" alt="next-devlens logo" />
 </p>
 
 # next-devlens
